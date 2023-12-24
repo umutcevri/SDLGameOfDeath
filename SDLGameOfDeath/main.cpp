@@ -10,6 +10,9 @@ const int SCREEN_HEIGHT = 720;
 const int gridRows = 36;
 const int gridCols = 64;
 
+const int SCREEN_FPS = 4;
+const int SCREEN_TICK_PER_FRAME = 1000 / SCREEN_FPS;
+
 int grid[gridRows * gridCols] = {};
 int nextGrid[gridRows * gridCols] = {};
 
@@ -37,7 +40,7 @@ void checkGreenCells(int cellNo)
     }
     
     //right
-    if (cellNo % (gridCols - 1) != 0)
+    if ((cellNo + 1) % gridCols != 0)
     {
         if(grid[cellNo + 1] == 1)
             numberOfFriendlyCells++;
@@ -179,9 +182,16 @@ void close()
 
 int main(int argc, char* args[])
 {
-    grid[66] = 1;
-    grid[67] = 1;
-    grid[68] = 1;
+    grid[70 + gridCols] = 1;
+    grid[73 + gridCols] = 1;
+    grid[198 + gridCols] = 1;
+    grid[199 + gridCols * 2] = 1;
+    grid[200 + gridCols * 2] = 1;
+    grid[201 + gridCols * 2] = 1;
+    grid[202 + gridCols * 2] = 1;
+    grid[138 + gridCols * 2] = 1;
+    grid[74 + gridCols * 2] = 1;
+    
 
     //grid[1] = 2;
     
@@ -199,6 +209,8 @@ int main(int argc, char* args[])
         //Event handler
         SDL_Event e;
 
+        int countedFrames = 0;
+
         //While application is running
         while (!quit)
         {
@@ -211,6 +223,15 @@ int main(int argc, char* args[])
                     quit = true;
                 }
             }
+
+            float currentTime = SDL_GetTicks();
+
+            float avgFPS = countedFrames / (SDL_GetTicks() / 1000.f);
+            if (avgFPS > 2000000)
+            {
+                avgFPS = 0;
+            }
+            printf("%f\n", avgFPS);
 
             //Apply the image
             //SDL_BlitSurface(gHelloWorld, NULL, gScreenSurface, NULL);
@@ -253,7 +274,16 @@ int main(int argc, char* args[])
 
             SDL_RenderPresent(gRenderer);
 
+            ++countedFrames;
+
             //SDL_UpdateWindowSurface(gWindow);
+
+            int frameTicks = SDL_GetTicks() - currentTime;
+            if (frameTicks < SCREEN_TICK_PER_FRAME)
+            {
+                //Wait remaining time
+                SDL_Delay(SCREEN_TICK_PER_FRAME - frameTicks);
+            }
         }
     }
 
