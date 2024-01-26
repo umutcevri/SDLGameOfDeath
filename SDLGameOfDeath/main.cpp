@@ -1,20 +1,23 @@
 #include <SDL.h>
 #include <stdio.h>
 #include <iterator>
+#include <iostream>
 
 using namespace std;
 
-const int SCREEN_WIDTH = 1280;
-const int SCREEN_HEIGHT = 720;
+const int SCREEN_WIDTH = 1920;
+const int SCREEN_HEIGHT = 1080;
 
-const int gridRows = 36;
-const int gridCols = 64;
+const int gridRows = 90;
+const int gridCols = 160;
 
-const int SCREEN_FPS = 4;
-const int SCREEN_TICK_PER_FRAME = 1000 / SCREEN_FPS;
+int SCREEN_FPS = 60;
+int SCREEN_TICK_PER_FRAME = 1000 / SCREEN_FPS;
 
 int grid[gridRows * gridCols] = {};
 int nextGrid[gridRows * gridCols] = {};
+
+bool isPlaying = false;
 
 void checkGreenCells(int cellNo)
 {
@@ -94,6 +97,18 @@ void checkGreenCells(int cellNo)
     {
         nextGrid[cellNo] = 1;
     }
+}
+
+void drawOnGrid()
+{
+    int xPos, yPos;
+    SDL_GetMouseState(&xPos, &yPos);
+
+    int xGrid = xPos / (SCREEN_WIDTH / gridCols);
+    int yGrid = yPos / (SCREEN_HEIGHT / gridRows);
+
+    grid[yGrid * gridCols + xGrid] = 1;
+
 }
 
 //Starts up SDL and creates window
@@ -182,18 +197,6 @@ void close()
 
 int main(int argc, char* args[])
 {
-    grid[70 + gridCols] = 1;
-    grid[73 + gridCols] = 1;
-    grid[198 + gridCols] = 1;
-    grid[199 + gridCols * 2] = 1;
-    grid[200 + gridCols * 2] = 1;
-    grid[201 + gridCols * 2] = 1;
-    grid[202 + gridCols * 2] = 1;
-    grid[138 + gridCols * 2] = 1;
-    grid[74 + gridCols * 2] = 1;
-    
-
-    //grid[1] = 2;
     
     //Start up SDL and create window
     if (!init())
@@ -222,70 +225,102 @@ int main(int argc, char* args[])
                 {
                     quit = true;
                 }
-            }
 
-            float currentTime = SDL_GetTicks();
-
-            float avgFPS = countedFrames / (SDL_GetTicks() / 1000.f);
-            if (avgFPS > 2000000)
-            {
-                avgFPS = 0;
-            }
-            printf("%f\n", avgFPS);
-
-            //Apply the image
-            //SDL_BlitSurface(gHelloWorld, NULL, gScreenSurface, NULL);
-
-            //Update the surface
-            SDL_SetRenderDrawColor(gRenderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
-            SDL_RenderClear(gRenderer);
-
-            for (int i = 0; i < size(grid); i++)
-            {
-                checkGreenCells(i);
-            }
-
-            for (int i = 0; i < size(nextGrid); i++)
-            {
-                grid[i] = nextGrid[i];
-
-                SDL_SetRenderDrawColor(gRenderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
-
-                SDL_Rect fillRect = { (i % gridCols) * SCREEN_WIDTH / gridCols, (i / gridCols) * SCREEN_HEIGHT / gridRows, SCREEN_WIDTH / gridCols, SCREEN_HEIGHT / gridRows};
-
-                if (nextGrid[i] == 1)
-                {
-                    SDL_SetRenderDrawColor(gRenderer, 0, 255, 0, SDL_ALPHA_OPAQUE);
+                if (e.key.keysym.sym == SDLK_ESCAPE) {
+                    quit = true;
                 }
-                    
-                SDL_RenderFillRect(gRenderer, &fillRect);
+
+                else if (e.key.keysym.sym == SDLK_SPACE)
+                {
+                    isPlaying = true;
+                    SCREEN_FPS = 4;
+                    SCREEN_TICK_PER_FRAME = 1000 / SCREEN_FPS;
+                }
+
+                else if (e.type == SDL_MOUSEBUTTONDOWN)
+                {
+                    if (e.button.button == SDL_BUTTON_LEFT) {
+                        printf("Left mouse button clicked at (%d, %d)\n", e.button.x, e.button.y);
+                        drawOnGrid();
+                    }
+                    else if (e.button.button == SDL_BUTTON_RIGHT) {
+                        printf("Right mouse button clicked at (%d, %d)\n", e.button.x, e.button.y);
+                    }
+                }
             }
 
-            SDL_SetRenderDrawColor(gRenderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
-            for (int i = 0; i <= gridCols; i++)
-            {
-                SDL_RenderDrawLine(gRenderer, i * SCREEN_WIDTH / gridCols, 0, i * SCREEN_WIDTH / gridCols, SCREEN_HEIGHT);
-            }
+                float currentTime = SDL_GetTicks();
 
-            for (int i = 0; i <= gridRows; i++)
-            {
-                SDL_RenderDrawLine(gRenderer, 0, i * SCREEN_HEIGHT / gridRows, SCREEN_WIDTH, i * SCREEN_HEIGHT / gridRows);
-            }
+                float avgFPS = countedFrames / (SDL_GetTicks() / 1000.f);
+                if (avgFPS > 2000000)
+                {
+                    avgFPS = 0;
+                }
+                //printf("%f\n", avgFPS);
 
-            SDL_RenderPresent(gRenderer);
+                //Apply the image
+                //SDL_BlitSurface(gHelloWorld, NULL, gScreenSurface, NULL);
 
-            ++countedFrames;
+                //Update the surface
+                SDL_SetRenderDrawColor(gRenderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
+                SDL_RenderClear(gRenderer);
 
-            //SDL_UpdateWindowSurface(gWindow);
+                if (isPlaying)
+                {
+                    for (int i = 0; i < size(grid); i++)
+                    {
+                        checkGreenCells(i);
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < size(grid); i++)
+                    {
+                        nextGrid[i] = grid[i];
+                    }
+                }
 
-            int frameTicks = SDL_GetTicks() - currentTime;
-            if (frameTicks < SCREEN_TICK_PER_FRAME)
-            {
-                //Wait remaining time
-                SDL_Delay(SCREEN_TICK_PER_FRAME - frameTicks);
+                for (int i = 0; i < size(nextGrid); i++)
+                {
+                    grid[i] = nextGrid[i];
+
+                    SDL_SetRenderDrawColor(gRenderer, 128, 128, 128, SDL_ALPHA_OPAQUE);
+
+                    SDL_Rect fillRect = { (i % gridCols) * SCREEN_WIDTH / gridCols, (i / gridCols) * SCREEN_HEIGHT / gridRows, SCREEN_WIDTH / gridCols, SCREEN_HEIGHT / gridRows };
+
+                    if (nextGrid[i] == 1)
+                    {
+                        SDL_SetRenderDrawColor(gRenderer, 0, 255, 0, SDL_ALPHA_OPAQUE);
+                    }
+
+                    SDL_RenderFillRect(gRenderer, &fillRect);
+                }
+
+                SDL_SetRenderDrawColor(gRenderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
+                for (int i = 0; i <= gridCols; i++)
+                {
+                    SDL_RenderDrawLine(gRenderer, i * SCREEN_WIDTH / gridCols, 0, i * SCREEN_WIDTH / gridCols, SCREEN_HEIGHT);
+                }
+
+                for (int i = 0; i <= gridRows; i++)
+                {
+                    SDL_RenderDrawLine(gRenderer, 0, i * SCREEN_HEIGHT / gridRows, SCREEN_WIDTH, i * SCREEN_HEIGHT / gridRows);
+                }
+
+                SDL_RenderPresent(gRenderer);
+
+                ++countedFrames;
+
+                //SDL_UpdateWindowSurface(gWindow);
+
+                int frameTicks = SDL_GetTicks() - currentTime;
+                if (frameTicks < SCREEN_TICK_PER_FRAME)
+                {
+                    //Wait remaining time
+                    SDL_Delay(SCREEN_TICK_PER_FRAME - frameTicks);
+                }
             }
         }
-    }
 
     //Free resources and close SDL
     close();
